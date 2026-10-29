@@ -115,6 +115,24 @@ rather than act as a hindrane.
     following stylistic guidelines. Humans are the opposite.
 
 
+
+### Limit LLM Interface Surface Area
+
+Any logical or physical segment of code should be *either* LLM _or_
+human-generated, but not both. Humans and LLMs have different reasoning modes,
+and employ semantics differently. Too many cooks spoil the pot, and this is
+certainly the pot, and this is certainly the case with software, even software
+that is purely human written and contains many maintainers.
+
+It is therefore preferrable for LLM-generated code to occupy its own set of
+functions, modules, or files and have its correctness verified by rigorous
+testing and observation.
+
+Human code, on the other hand, has a kind of internal thought pattern
+associated with it, and it is often easy to understand the quality of human
+code simply by reading it.
+
+
 ## The Golden Rule of LLM Reviewing
 
 The original Golden Rule "Do not do unto others what you do not want done
@@ -125,3 +143,13 @@ to yourself" can be recast in terms of LLM reviewing and generation:
 - Do not generate a PR in such a manner where the human time the author
     spent generating it is less than the human time the reviewer spends
     reviewing it.
+
+## AI Reviewers (GReptile, CodeRabbit, etc)
+
+While these tools are helpful as internal audits and nitpicks, they generate
+far too much line noise far too early in the review process. These tools
+should be set to their laxest setting initially to filter our constructs
+and patterns that are clearly wrong, e.g. off-by-ones, typos, clear deadlocks,
+null dereferences.
+
+
