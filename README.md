@@ -98,6 +98,10 @@ rather than act as a hindrane.
     comments should be strictly explaining parameters or return values, and
     NOT providing rationale for X or Y design decision. Either write the
     comment yourself, or leave it out.
+    Comments should explain WHAT the code does as well as WHY it does, but
+    this requires a human touch to understand what is too much and too little
+    explanation in context.
+
 
 3) Keep commits atomic. Even if you combine multiple changes into a single
     pull request, try to isolate each change to its own commit. This is
@@ -132,6 +136,13 @@ Human code, on the other hand, has a kind of internal thought pattern
 associated with it, and it is often easy to understand the quality of human
 code simply by reading it.
 
+Therefore, LLM generated code should live in its own black box, as a library
+or implementation of a *human* defined and derived API.
+
+PRs should be looked at negatively when AIs *extend* existing APIs (internal
+or external), or *modify* existing fields and structures without justification,
+because chances are that a human would not have done the same.
+
 
 ## The Golden Rule of LLM Reviewing
 
@@ -152,4 +163,9 @@ should be set to their laxest setting initially to filter our constructs
 and patterns that are clearly wrong, e.g. off-by-ones, typos, clear deadlocks,
 null dereferences.
 
+They should be consolidated in a single review agent that highlights
+obvious issues in the code *before* any human reviewer touches it.
 
+Things like tests and more nitpick-like comments can and should be triggered
+by reviewers *after* passing initial quality sanity checks (human and
+AI-derived)

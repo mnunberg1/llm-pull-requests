@@ -1,1 +1,5 @@
 *.swp
+results/
+grades/
+data/
+scripts/
