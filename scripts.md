@@ -7,10 +7,15 @@ rebuild them. If a script's behavior changes, change it here too.
 Common: Python 3 stdlib only, run with `python3 -I`. Every
 `argparse.ArgumentParser` gets `color=False`. `ROOT` is the parent of
 `scripts/`. A repo is written `owner/name` for GitHub and `owner_name` on disk.
+Each script starts with a comment saying it is AI generated.
+
+Default repo: no repo name is hardcoded. A `default_repo()` helper reads
+`REPO.md` and returns the first `github.com/<owner>/<name>` match as
+`owner/name`; that is the canonical repo. `--repo` overrides it.
 
 ## fetch_prs.py
 
-Args: `--repo` (default `valkey-io/valkey-search`), `--limit` (default 25).
+Args: `--repo` (default: `default_repo()`), `--limit` (default 25).
 
 1. `gh pr list -R <repo> --state all --limit <n> --json number`.
 2. For each PR, skip it if `data/<owner_name>/prs/<n>/diff.patch` exists.
@@ -25,7 +30,7 @@ Args: `--repo` (default `valkey-io/valkey-search`), `--limit` (default 25).
 
 ## grade.py
 
-Args: `--repo` (default `valkey-io_valkey-search`, the on-disk name),
+Args: `--repo` (default: `default_repo()` in the on-disk form),
 `--run-id` (required), `-j` (default 4 workers).
 
 For each `data/<repo>/prs/<n>` directory, in parallel, skipping any that

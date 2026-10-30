@@ -3,3 +3,5 @@ results/
 grades/
 data/
 scripts/
+.idea/
+*-edit.md

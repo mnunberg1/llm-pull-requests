@@ -1,6 +1,7 @@
 # LLM PR Grader – Project Plan
 
-Goal: grade PRs against the Pull Request Guidelines, refine offline until grades match human judgement, then wire into GitHub.
+Goal: grade PRs against the Pull Request Guidelines, refine offline until grades
+match human judgement, then wire into GitHub.
 
 ## Target Repo
 
@@ -51,7 +52,10 @@ session (Claude Code) in this repo.
 
 ## Model output contract
 
-The grader must return only JSON, nothing else. No per-criterion scores; the comments carry the detail. Each comment carries a 1-5 sentiment (1 very negative, 5 very positive) that shows how the model viewed the code. It is display only and never feeds any score:
+The grader must return only JSON, nothing else. No per-criterion scores; the
+comments carry the detail. Each comment carries a 1-5 sentiment
+(1 very negative, 5 very positive) that shows how the model viewed the code.
+It is display only and never feeds any score:
 
 ```json
 {
@@ -64,13 +68,20 @@ The grader must return only JSON, nothing else. No per-criterion scores; the com
 ## Workflow
 
 1. Fetch the last 20–30 PRs (open and closed) once.
-1. Grade them all into results/<run-id>/.
-1. Run `scripts/serve.py <run-id>` and open the page in a browser. Each PR shows its GitHub link, title, author, the model's 1-5 score and its comments with sentiment badges, an optional 1-5 grade of mine, and a notes box. Saving writes grades/<number>.txt.
-1. The page can filter to PRs where the model and I differ by 2+ points. summary.txt is regenerated on each save.
-1. Interactive LLM session prompts for adjustments to rubric.md and plan.md based on feedback.
-1. Adjust rubric.md, re-run into a new results/\<run-id>, compare.
-1. Repeat until agreement is good enough.
+2. Grade them all into results/<run-id>/.
+3. Run `scripts/serve.py <run-id>` and open the page in a browser. Each PR shows
+   its GitHub link, title, author, the model's 1-5 score and its comments with
+   sentiment badges, an optional 1-5 grade of mine, and a notes box. Saving
+   writes grades/<number>.txt.
+4. The page can filter to PRs where the model and I differ by 2+ points.
+   summary.txt is regenerated on each save.
+5. Interactive LLM session prompts for adjustments to rubric.md and plan.md
+   based on feedback.
+6. Adjust rubric.md, re-run into a new results/\<run-id>, compare.
+7. Repeat until agreement is good enough.
 
 ## Later: GitHub integration
 
-Once calibrated, a GitHub Action on pull\_request (opened, synchronize) runs fetch + grade for that PR and posts a single short comment or check status. Start in a silent/log-only mode before posting publicly.
+Once calibrated, a GitHub Action on pull\_request (opened, synchronize) runs
+fetch + grade for that PR and posts a single short comment or check status.
+Start in a silent/log-only mode before posting publicly.
