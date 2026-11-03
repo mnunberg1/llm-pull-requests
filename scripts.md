@@ -9,14 +9,26 @@ Common: Python 3 stdlib only, run with `python3 -I`. Every
 `scripts/`. A repo is written `owner/name` for GitHub and `owner_name` on disk.
 Each script starts with a comment saying it is AI generated.
 
+Config: every script except `ci_grade.py` accepts `--config <file>`; else
+`$PRDOCS_CONFIG`; else `active-config.cfg` (a symlink to the
+active `<name>.cfg`). The file has `key=value` lines (blank and `#`
+lines ignored); `repo=` is a path relative to the project root naming the repo
+file (`repos/<name>.md`). Each script exports the chosen config in
+`$PRDOCS_CONFIG` for the scripts it launches. It exits with an error if the
+config or its `repo=` line is missing. "The repo file" below means that file.
+
 Default repo: no repo name is hardcoded. A `default_repo()` helper reads
-`REPO.md` and returns the first `github.com/<owner>/<name>` match as
+the repo file and returns the first `github.com/<owner>/<name>` match as
 `owner/name`; that is the canonical repo. `--repo` overrides it.
 
 <!-- AI BEGIN -->
-Mirror repo: a `mirror_repo()` helper reads `REPO.md` and returns, as
+Mirror repo: a `mirror_repo()` helper reads the repo file and returns, as
 `owner/name`, the first `github.com/<owner>/<name>` match on a line that
-contains `mirror` (case-insensitive). It exits with an error if there is none.
+contains `mirror` (case-insensitive). It returns `None` if there is none: a mirror
+is optional, needed only without write access to the main repo.
+`collect_ci.py` then uses the main repo; `mirror_prs.py` exits with an error for
+`--pr`, `--selected`, `--open` and `--close`, and `--push-grader` pushes to the
+main repo.
 `--mirror` overrides it. Only the mirroring scripts use it.
 <!-- AI END -->
 
@@ -35,7 +47,7 @@ Picks `per-bucket` PRs each of small, medium and large size, open and closed.
    (see below); get its diff (the cached `diff.patch` if present, else
    `gh pr diff`); compute its size and bucket; skip it if that bucket is full.
 4. Size is the number of added plus deleted lines in files under a core source
-   path from the `Size classification` section of `REPO.md`, not counting blank
+   path from the `Size classification` section of the repo file, not counting blank
    lines or comment-only lines (after stripping, starting with `//`, `#`,
    `/*`, `*` or `*/`). Test files are not counted, except when a PR has zero
    core lines and changes test files: then size is its test lines (a test
@@ -60,7 +72,7 @@ re-fetched if `--refresh` was given, and ignored PRs are skipped with
 `ignored <n>`. Print `fetched <n>` per PR. Used by CI and by `collect_ci.py`.
 <!-- AI END -->
 
-Ignore lists: `REPO.md` may have `## Ignored authors` and `## Ignored titles`
+Ignore lists: the repo file may have `## Ignored authors` and `## Ignored titles`
 sections, each holding a bullet list (`- item`; other text is ignored, and so
 is anything after ` (` in a bullet, which is a comment). A PR is
 ignored if its author login equals an ignored author, or its title contains an
@@ -75,7 +87,7 @@ only these PR numbers).
 
 For each PR listed in `data/<repo>/selected.json` (all directories under
 `prs/` if that file is missing), in parallel, skipping any whose `meta.json` is
-ignored and any that already have `results/<run-id>/<n>.json`:
+ignored and any that already have `results/<owner_name>/<run-id>/<n>.json`:
 
 1. Build the prompt, concatenated in this order: `prompt.md`; the output format
    block below (a constant in the script); `# Guidelines` + `guidelines.md`;
@@ -86,7 +98,7 @@ ignored and any that already have `results/<run-id>/<n>.json`:
 2. Run `claude -p --model sonnet --tools "" --no-session-persistence` with the
    prompt on stdin.
 3. Take the text from the first `{` to the last `}`, parse it as JSON and write
-   it, indented, to `results/<run-id>/<n>.json`. On a parse failure print the
+   it, indented, to `results/<owner_name>/<run-id>/<n>.json`. On a parse failure print the
    PR number, the first 200 characters of stdout and of stderr to stderr, and
    write nothing.
 4. Print `graded <n>`.
@@ -119,7 +131,7 @@ Asks the model to explain a stored grade. Never writes to `results/` or
 1. Build the same input as `grade.py` (prompt, guidelines, rubric, examples,
    PR meta, commits, diff, same truncation), but without the output format block. The
    prompt is under a `# Grading prompt you were given` header.
-2. Append `# Your previous answer` + `results/<run-id>/<pr>.json`.
+2. Append `# Your previous answer` + `results/<owner_name>/<run-id>/<pr>.json`.
 3. Append `# Question` + the question. With no question use: "Explain why you
    gave this overall rating and each comment. Quote the rubric or guideline
    text you relied on, and say where it was ambiguous."
@@ -135,15 +147,15 @@ Args: `run_id` (positional), `--repo` (as above), `--port` (default 8765).
 Serves on 127.0.0.1, silences request logging, opens the page in the browser,
 creates `grades/` if missing, writes `summary.txt` at startup.
 
-Data per PR, for each `results/<run-id>/<n>.json` in numeric order: `pr`,
+Data per PR, for each `results/<owner_name>/<run-id>/<n>.json` in numeric order: `pr`,
 `title`, `author` (from `meta.json`), `url`
 (`https://github.com/<owner>/<name>/pull/<n>`), `model` (the `overall`),
 `comments`, `effort` (null if absent) and the human fields `mine` and `notes`
-from `grades/<n>.txt`.
+from `grades/<owner_name>/<n>.txt`.
 A comment that is a plain string (older runs) is treated as
 `{sentiment: null, text: <string>}`.
 
-`grades/<n>.txt`: `overall: <1-5 or empty>`, then `notes:`, then the notes.
+`grades/<owner_name>/<n>.txt`: `overall: <1-5 or empty>`, then `notes:`, then the notes.
 Missing file means no grade and no notes.
 
 Routes:
@@ -152,7 +164,7 @@ Routes:
   otherwise write it in the format above. Then regenerate `summary.txt`.
 - Any other GET: the page.
 
-`results/<run-id>/summary.txt`: per PR a line
+`results/<owner_name>/<run-id>/summary.txt`: per PR a line
 `<n>\tmodel=<N>\tmine=<N or ->`, then one line per comment
 `  - [<sentiment or ?>] <text>`, then if present
 `  effort: author ~<N>m, review ~<N>m (<review/author, 1 decimal>x)`.
@@ -221,8 +233,8 @@ with the merge base's committer date, so the same inputs always give the same
 commit and unchanged bases are not pushed again.
 
 `--push-grader`: publish the grader bundle to branch `pr-grader` of the
-mirror. The bundle is `prompt.md`, `rubric.md`, `guidelines.md`, `REPO.md`,
-`learning/*.md` and `scripts/*.py` from this checkout. Commit it on top of the
+mirror. The bundle is `prompt.md`, `rubric.md`, `guidelines.md`, `active-config.cfg` (a copy of the selected config) and the repo
+file at its `repo=` path, `learning/*.md` and `scripts/*.py` from this checkout. Commit it on top of the
 mirror's current `pr-grader` (if any) with message `pr-grader bundle from
 <short HEAD of this repo>` (`-dirty` appended if `git status --porcelain` is
 not empty); skip the commit and push if the tree did not change. Runs first
@@ -340,7 +352,7 @@ keeping completed runs of workflow `pr-grader` (filter by name: the workflow
 file lives only on `base/*` branches, so `--workflow` may not find it); for
 each run, `gh run download` into a temp
 dir (no error if it has no artifacts); for every `run-id.txt` found in it,
-copy each `<n>.json` next to it to `results/<run id>/<n>.json` unless that
+copy each `<n>.json` next to it to `results/<owner_name>/<run id>/<n>.json` unless that
 exists, printing `collected <run id> <n>`. Then run `fetch_prs.py --pr` for
 collected PRs that have no `meta.json`.
 

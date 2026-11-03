@@ -3,7 +3,7 @@ name: grade-review
 description: Interactive grade-review-refine loop for the PR grader. Shows
   graded PRs one at a time, records the user's inline feedback, answers
   questions about the grader's rationale, and proposes generic changes to
-  rubric.md, prompt.md, guidelines.md, plan.md and REPO.md. Use when the user
+  rubric.md, prompt.md, guidelines.md, plan.md and the repo file. Use when the user
   wants to review grader output, give feedback on grades, ask why the grader
   said something, or refine the rubric.
 ---
@@ -16,15 +16,47 @@ Drive the review of graded PRs and turn the user's feedback into proposed
 rubric changes. The user is the authority on what a good grade is; the model
 is only the thing being calibrated.
 
+## Active configuration
+
+This skill works on exactly one configuration (`<name>.cfg`, whose `repo=`
+line names the repo file) and does nothing until one is active.
+
+- Resolve it first: the `.cfg` the user names, else `$PRDOCS_CONFIG`, else the
+  symlink `active-config.cfg` in the project root (`readlink` gives the
+  profile name). If none exists (or the symlink is dangling), list the
+  `*.cfg` files, ask which to use, and create the symlink with
+  `ln -sfn <name>.cfg active-config.cfg`. Never guess.
+- A named `.cfg` or `$PRDOCS_CONFIG` becomes active by repointing the symlink
+  (confirm first if that changes the existing target), so the skill, the
+  scripts and the status bar always agree.
+- Check that the file exists, has a `repo=` line, and that the repo file it
+  names exists. If not, say what is wrong and stop.
+- Pass `--config <active>` on every script call below. Never run a script
+  without it.
+- The user can switch ("use valkey.cfg", or `/grade-change-config`). Switching repoints `active-config.cfg`,
+  updates the status bar, re-runs the change check and re-picks the run (a run
+  belongs to one repo; warn if its PRs are not in `data/<owner>_<name>/`).
+
+### Status bar
+
+The active profile is shown on Claude Code's bottom status bar, by
+`.claude/statusline.sh` (configured in `.claude/settings.json`). It reads the
+`active-config.cfg` symlink and shows `● <name>.cfg  <repo file>  <owner/name>`,
+or `○ NO ACTIVE CONFIG`. Do not print a banner in messages. If the status line
+is not set up, say so once and offer to restore those two files. After any
+switch, tell the user in one line which profile is now active.
+
 ## Setup
 
+0. Establish the active configuration (above).
 1. Run the change check (below). It reads `CLAUDE.md`, `plan.md`, `rubric.md`,
-   `prompt.md` and `REPO.md` the first time and whenever they change. Follow
-   the conventions in `CLAUDE.md`, especially wrapping markdown at 80 columns.
-2. Pick the run: the id the user names, else the newest folder in `results/`.
-   If `results/` is empty or the user wants a fresh run, offer
-   `python3 -I scripts/grade.py --run-id <run-id>` and wait for it.
-3. Load every `results/<run-id>/<n>.json` and any `grades/<n>.txt`.
+   `prompt.md` and the active repo file the first time and whenever they
+   change. Follow the conventions in `CLAUDE.md`, especially wrapping markdown at 80 columns.
+2. Pick the run: the id the user names, else the newest folder in `results/<owner_name>/`.
+   If `results/<owner_name>/` is empty or the user wants a fresh run, offer
+   `python3 -I scripts/grade.py --config <active> --run-id <run-id>` and wait
+   for it.
+3. Load every `results/<owner_name>/<run-id>/<n>.json` and any `grades/<owner_name>/<n>.txt`.
 
 ## Change check
 
@@ -33,8 +65,8 @@ the md5 of every file this skill depends on as of the last time it was read, so
 edits are noticed and acted on.
 
 Tracked files: `CLAUDE.md`, `plan.md`, `rubric.md`, `prompt.md`,
-`guidelines.md`, `REPO.md`, `scripts.md`, this `SKILL.md`, `learning/*.md` and
-`scripts/*.py`. Not `grades/`, `results/` or `data/`.
+`guidelines.md`, the active config, its repo file, `scripts.md`, this
+`SKILL.md`, `learning/*.md` and `scripts/*.py`. Not `grades/`, `results/` or `data/`.
 
 `checksums.md` holds one list item per file, `- <md5>  <path>`, under a
 heading. If it
@@ -52,8 +84,8 @@ Run the check at setup, before showing each PR, and before each Refine:
 5. Act on the consequences, asking before anything slow:
    - `SKILL.md`: follow the new version from here on.
    - `CLAUDE.md`, `plan.md`: follow the new conventions and workflow.
-   - `REPO.md`: if the ignore lists or size classification changed, the PR
-     sample is stale; offer `fetch_prs.py --refresh`, then a grade into a new
+   - the active config or repo file: if the ignore lists or size classification changed, the PR
+     sample is stale; offer `fetch_prs.py --config <active> --refresh`, then a grade into a new
      run id.
    - `rubric.md`, `prompt.md`, `guidelines.md`, `learning/*.md`: the current
      run was graded with the old text; offer a re-grade into a new run id, and
@@ -74,7 +106,7 @@ the user disagree by 2 or more. Skip any with an existing grade unless asked.
 
 For each PR show:
 - `#<n> <title>`, author and the GitHub link (build it from the first
-  `github.com/<owner>/<name>` link in `REPO.md`)
+  `github.com/<owner>/<name>` link in the repo file)
 - the model's overall 1-5 score
 - the effort estimate if the result has one, as `author ~Nm, review ~Nm (Rx)`
 - summarize the comments. if the user asks for the exact verbatim comments or
@@ -89,7 +121,7 @@ Then stop and wait. The user replies in free text. Understand these forms:
 - "next", "skip", "back", "stop"
 - a question about the grader (see below)
 
-Record each reply in `grades/<n>.txt`, the same format the web page writes:
+Record each reply in `grades/<owner_name>/<n>.txt`, the same format the web page writes:
 
 ```
 overall: <integer 1-5, or empty>
@@ -106,7 +138,7 @@ discard earlier notes. Confirm briefly, then show the next PR.
 When the user asks why the model gave a score or wrote a comment, run:
 
 ```
-python3 -I scripts/explain.py <run-id> <n> "<the user's question>"
+python3 -I scripts/explain.py --config <active> <run-id> <n> "<the user's question>"
 ```
 
 With no question the script asks for a full rationale. Show the answer, say
@@ -127,18 +159,18 @@ Propose changes as diffs and wait for approval before editing anything:
 - `plan.md`: process changes only
 - `guidelines.md`: only for a real gap in the guidelines themselves, and say
   so; it is normally left unchanged
-- `REPO.md`: anything specific to the target repo, such as ignored authors or
+- the repo file (`repos/<name>.md`): anything specific to the target repo, such as ignored authors or
   titles
 - `learning/`: a new example, proposed only occasionally (see below)
 
 Rules for every proposal:
 - Generic wording only: no PR numbers, repo names, author names or examples
-  copied from a specific PR. Repo-specific rules go only in `REPO.md`.
+  copied from a specific PR. Repo-specific rules go only in the repo file.
 - Base each change on the user's feedback, not on your own opinion of the
   grader. Say which feedback motivated it, outside the file text.
 - Prefer a few sharp rules over many; check for conflicts with existing text.
 - Wrap markdown at 80 columns.
-- `guidelines.md`, `plan.md`, `rubric.md`, `README.md` and `REPO.md` are
+- `guidelines.md`, `plan.md`, `rubric.md`, `README.md` and the repo file are
   manually controlled (see `CLAUDE.md`): every edit needs explicit approval,
   and each generated block is wrapped in `<!-- AI BEGIN -->` and
   `<!-- AI END -->` markers, in the proposed diff and in the file.
@@ -165,7 +197,8 @@ reason. Rules:
 ## Re-grade and compare
 
 After approved changes, offer to re-grade into a NEW run id (never overwrite a
-run): `python3 -I scripts/grade.py --run-id <new-run-id>`. Then compare the
+run): `python3 -I scripts/grade.py --config <active> --run-id <new-run-id>`. Then
+compare the
 graded PRs old vs new against the user's grades: where the gap closed, where it
 widened, and any new disagreements. Continue the loop on the new run, until the
 user says agreement is good enough.

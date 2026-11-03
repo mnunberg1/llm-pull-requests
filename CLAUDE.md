@@ -9,12 +9,18 @@ LLM grader for GitHub PRs, scored against the Pull Request Guidelines. See
 - `rubric.md` – criteria and review order; self-updating with human approval
 - `prompt.md` – grading prompt sent to the model; self-updating with human
   approval
-- `REPO.md` – target repo info
+- <!-- AI BEGIN -->`<name>.cfg` configs (`valkey.cfg`, `valkey-search.cfg`, ...), each with
+  `repo=repos/<name>.md` naming the repo file; `active-config.cfg` is a
+  gitignored symlink to the active one (default for all scripts)
+- `repos/` – target repo info, one `<name>.md` per repo; `example.md` is a
+  generic template<!-- AI END -->
 - `scripts/` – `fetch_prs.py`, `grade.py`, `explain.py`, `serve.py`,
   <!-- AI BEGIN -->`mirror_prs.py`, `ci_grade.py`, `collect_ci.py`,
   `pr-grader.yml`<!-- AI END --> - generated
 - `.claude/skills/grade-review/` – the interactive review-refine loop; use it
   to review grades and ask the grader for its rationale
+- <!-- AI BEGIN -->`.claude/skills/grade-change-config/` – `/grade-change-config`
+  switches the active config (repoints `active-config.cfg`)<!-- AI END -->
 - `learning/` – small example PRs and why they were accepted or not, named
   `accepted-<topic>.md` or `rejected-<topic>.md`; added to the grading prompt
   after the rubric
@@ -30,6 +36,15 @@ python3 -I scripts/grade.py --run-id <run-id>
 python3 -I scripts/explain.py <run-id> <pr> ["question"]   # grader's rationale
 python3 -I scripts/serve.py <run-id>      # grading page at http://127.0.0.1:8765/
 ```
+
+<!-- AI BEGIN -->
+All scripts except `ci_grade.py` accept `--config <file.cfg>` (e.g.
+`valkey.cfg`, `valkey-search.cfg`) to pick which repo to work on. The config
+holds `repo=repos/<name>.md`. `$PRDOCS_CONFIG` works too, and `ci_grade.py`
+only honours the env var. The flag wins over the env var; the default is
+`active-config.cfg`. Data lives under `data/<owner>_<name>/`, so each repo stays
+separate.
+<!-- AI END -->
 
 <!-- AI BEGIN -->
 GitHub integration (see `integration.md`):
@@ -52,7 +67,7 @@ AI additions properly:
 - `rubric.md`
 - `plan.md`
 - `README.md`
-- `REPO.md`
+- <!-- AI BEGIN -->`repos/*.md` (repo files) and `<name>.cfg` files<!-- AI END -->
 
 Any modification to these files should be done by requesting explicit approval.
 
@@ -60,18 +75,19 @@ Any modification to these files should be done by requesting explicit approval.
 
 - Never edit `guidelines.md`, `plan.md`, or `rubric.md` without showing the diff
   and getting approval first
-- Don't modify REPO.md data unless asked
-- Rubric changes come from the user's grades and notes in `grades/<n>.txt`, not
+- Don't modify repo files (`repos/*.md`) data unless asked
+- Rubric changes come from the user's grades and notes in <!-- AI BEGIN -->`grades/<owner_name>/<n>.txt`<!-- AI END -->, not
   from the model's own judgement.
-- Use a new `results/<run-id>` for each rubric or prompt version; never
+- Use a new <!-- AI BEGIN -->`results/<owner_name>/<run-id>`<!-- AI END --> for each rubric or prompt version; never
   overwrite old runs.
 - When generating/reformatting md files, wrap at 80 chars.
 - Comment in the file if the file is AI generated
-- The target repo name lives only in `REPO.md`. Do not write it in any other
-  file; scripts and specs must read it from `REPO.md` (first
-  `github.com/<owner>/<name>` link is the canonical repo).
+- The target repo name lives only in the repo file (`repos/<name>.md`, chosen
+  by the config's `repo=` line). Do not write it in any other file; scripts and
+  specs must read it from there (first `github.com/<owner>/<name>` link is the
+  canonical repo).
 - Rules in rubric.md, prompt.md and plan.md must be generic: no PR numbers or
-  repo names. Repo-specific rules go only in REPO.md.
+  repo names. Repo-specific rules go only in the repo file.
 - When modifying/adding/applying diffs in manually-controlled files,
   be sure to ANNOTATE the beginning and end of LLM-generated blocks with
   `<!-- AI BEGIN -->` and `<!-- AI END -->` markers

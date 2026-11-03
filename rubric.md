@@ -73,7 +73,7 @@ tooling changes. Expectations scale with the size and risk of the change.
 A compatibility break counts against the PR even when the description
 documents it.
 
-Automated PRs from bots are not graded; REPO.md lists which to skip.
+Automated PRs from bots are not graded; the repo file <!-- AI BEGIN -->(`repos/<name>.md`)<!-- AI END --> lists which to skip.
 
 <!-- AI END -->
 

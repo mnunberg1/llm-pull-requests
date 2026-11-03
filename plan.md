@@ -5,7 +5,27 @@ match human judgement, then wire into GitHub.
 
 ## Target Repo
 
-To be read in file REPO.md
+To be read in the repo file named by the active configuration (see below).
+
+<!-- AI BEGIN -->
+### Active configuration
+
+A configuration (`<name>.cfg`, with a `repo=repos/<name>.md` line) selects the
+repo being graded. Every run, review and script call works on exactly one
+active configuration, and none may start without one:
+
+- Scripts take it from `--config`, else `$PRDOCS_CONFIG`, else the symlink `active-config.cfg`.
+- `active-config.cfg` is a symlink (gitignored) to the active `<name>.cfg`;
+  switching configurations means repointing it.
+- The `grade-review` skill needs it: it uses a `.cfg` I name, else
+  `$PRDOCS_CONFIG`, else the symlink, asks me to pick one and creates the
+  symlink if there is none, and passes `--config` on every script call.
+- In a Claude console session, the active configuration is shown on the bottom
+  status bar (`.claude/statusline.sh`, set in `.claude/settings.json`), like
+  the branch in a git prompt: `● <name>.cfg  <repo file>  <owner/name>`, or
+  `○ NO ACTIVE CONFIG`. Switching repoints the symlink and re-runs the change
+  check.
+<!-- AI END -->
 
 ## Directory layout
 
@@ -14,7 +34,9 @@ ROOT/
     guidelines.md      # the Pull Request Guidelines doc, unchanged
     rubric.md          # criteria and review order, weighed qualitatively; updated with human approval
     prompt.md          # grading prompt (wording and nature of the grading); updated with human approval
-    REPO.md            # repo-specific information
+    <name>.cfg         # configuration; `repo=repos/<name>.md` <!-- AI BEGIN --><!-- AI END -->
+    active-config.cfg  # symlink to the active <name>.cfg; gitignored <!-- AI BEGIN --><!-- AI END -->
+    repos/<name>.md    # repo-specific information <!-- AI BEGIN --><!-- AI END -->
     CLAUDE.md          # project instructions for Claude
     scripts.md         # spec for regenerating scripts/
     checksums.md       # md5 of files the grade-review skill depends on (gitignored)
@@ -97,23 +119,23 @@ PR is about the test infrastructure itself.
 
 ### Grading
 
-Grade them all into results/<run-id>/ by using the grading script
+Grade them all into <!-- AI BEGIN -->results/<owner_name>/<run-id><!-- AI END -->/ by using the grading script
 
 ### Viewing
 
 Run `scripts/serve.py <run-id>` and open the page in a browser. Each PR shows
 its GitHub link, title, author, the model's 1-5 score and its comments with
 sentiment badges, an optional 1-5 grade of mine, and a notes box. Saving
-writes grades/<number>.txt.
+writes <!-- AI BEGIN -->grades/<owner_name>/<number>.txt<!-- AI END -->.
 
 ### Review Loop
 
 - Run the `grade-review` skill: Claude walks me through the graded PRs,
 records my feedback in grades/, answers questions about the grader's
 rationale, and proposes generic diffs to rubric.md, prompt.md and
-plan.md, and repo-specific ones to REPO.md. I approve each diff.
+plan.md, and repo-specific ones to the repo file. I approve each diff.
 
-- Adjust rubric.md, re-run into a new results/\<run-id>, compare. 
+- Adjust rubric.md, re-run into a new <!-- AI BEGIN -->results/<owner_name>/\<run-id><!-- AI END -->, compare. 
 - Repeat until agreement is good enough.
 
 ## Later: GitHub integration

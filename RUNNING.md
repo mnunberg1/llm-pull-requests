@@ -14,14 +14,16 @@ is needed.
    git clone <this repo's URL> prdocs && cd prdocs
    ```
 
-2. Point it at your repo. Edit `REPO.md`:
+2. Point it at your repo. Copy `repos/example.md` to `repos/<name>.md`, write
+   `repo=repos/<name>.md` in a new `<name>.cfg`, and point the symlink
+   `active-config.cfg` at it (`ln -sfn <name>.cfg active-config.cfg`), and edit the repo file:
     - Replace the first `github.com/<owner>/<name>` link with the repo whose
       PRs you want to grade. This is the only place the repo name is written.
     - Fill in `Ignored authors` (bots), `Ignored titles`, and the
       `Size classification` paths (core source and test paths of your repo).
-    - Only needed for the GitHub integration: a second link on a line
-      containing the word "mirror" is a repo you can write to (see
-      `integration.md`).
+    - Optional, and only for testing the grader in a GitHub workflow when you
+      cannot write to the main repo: a second link on a line containing the
+      word "mirror" is a repo you can write to (see `integration.md`).
 
 3. Generate the scripts. Only the specs are committed, so `scripts/` does not
    exist after a clone. Start Claude Code in this directory and run:
@@ -59,7 +61,7 @@ is needed.
 7. Tune the grader to your taste. In Claude Code, run `/grade-review`: it walks
    through the graded PRs, records your feedback in `grades/`, explains the
    grader's reasoning, and proposes changes to `rubric.md`, `prompt.md` and
-   `REPO.md` for your approval. Then grade again into a new run id (step 5)
+   the repo file for your approval. Then grade again into a new run id (step 5)
    and compare. Repeat until the grades match your judgement.
 
    `guidelines.md` is the standard the PRs are graded against. Replace it
@@ -68,7 +70,7 @@ is needed.
 8. Optional, once calibrated: run the grader as a GitHub Action on a mirror
    repo, using your own machine as the runner. See `integration.md`.
 
-Files you edit: `REPO.md`, `guidelines.md`, `rubric.md`, `prompt.md` and the
+Files you edit: `<name>.cfg`, `repos/<name>.md`, `guidelines.md`, `rubric.md`, `prompt.md` and the
 examples in `learning/`. Generated and gitignored: `scripts/`, `data/`,
 `grades/`, `results/`.
 

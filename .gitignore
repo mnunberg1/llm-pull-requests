@@ -6,6 +6,7 @@ scripts/
 .idea/
 *-edit.md
 checksums.md
+active-config.cfg
 
 # self-hosted GitHub Actions runner (binaries, credentials, work dir)
 /actions-runner/
