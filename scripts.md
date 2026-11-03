@@ -29,7 +29,7 @@ Picks `per-bucket` PRs each of small, medium and large size, open and closed.
 
 1. If `data/<owner_name>/selected.json` exists, print it and stop, unless
    `--refresh` was given (the sample is fetched once).
-2. `gh pr list -R <repo> --state all --limit <scan-limit> --json[REPO.md](REPO.md)
+2. `gh pr list -R <repo> --state all --limit <scan-limit> --json
    number,title,author`, newest first.
 3. For each PR in order, until every bucket is full: skip it if it is ignored
    (see below); get its diff (the cached `diff.patch` if present, else

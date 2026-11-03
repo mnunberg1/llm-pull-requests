@@ -6,3 +6,6 @@ scripts/
 .idea/
 *-edit.md
 checksums.md
+
+# self-hosted GitHub Actions runner (binaries, credentials, work dir)
+/actions-runner/

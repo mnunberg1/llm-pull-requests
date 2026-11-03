@@ -19,3 +19,7 @@ layout.
 
 `scripts.md` -- a generated file, is linked in by `plan.md` to
 generate the boilerplate which analyzes pull requests and applies the grading.
+
+The [RUNNING.md](RUNNING.md) file contains AI-generated instructions about running
+this system in your own repository. Because this is an interactive process,
+it itself requires AI cooperation
