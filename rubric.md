@@ -32,8 +32,10 @@ Things to consider:
 
 Long descriptions/LLM tables may be justified for PRs which substantially
 change or modify performance (e.g. CPU consumption, memory footprint).
-Tables, however, only make sense if there are more than two columns or
-rows. For example
+
+Tables are acceptable and informative when it compares performance across
+different workloads or configurations, but are unacceptable when the same
+performance metric can be restated in a simple sentence. For example>
 
 | | Before | After |
 |---|---|---|
@@ -49,6 +51,53 @@ Long descriptions are more justified for larger PRs than they are for
 smaller ones, but ideally the explanations should be present within
 each commit message.
 
+<!-- AI BEGIN -->
+
+Description length should be proportional to the size (and/or impact) of
+the change. A performance table or multi-section description on a small fix is
+a negative even when accurate because it adds line noise.
+It is justified only when the PR's purpose is performance and the table is the
+evidence.
+
+Judge a table on what it shows, not on its size. In a performance PR, do not
+penalize a results table; penalize the prose around it (implementation
+detail, repeated sections) on its own merits.
+
+Comments that explain WHY (rationale, history, design choices) are a
+negative, however short. Comments should say what the code does or document
+parameters and return values. Never praise rationale comments.
+
+Do not penalize terse descriptions or commit messages on trivial docs, CI or
+tooling changes. Expectations scale with the size and risk of the change.
+
+A compatibility break counts against the PR even when the description
+documents it.
+
+Automated PRs from bots are not graded; REPO.md lists which to skip.
+
+<!-- AI END -->
+
+<!-- AI BEGIN -->
+
+Use established terminology: the words in the issue, the code and the project
+docs. Invented or coined terms for ordinary concepts, in the title,
+description, names or comments, are a negative.
+
+A large amount of generated code, such as tests or tooling, needs a short
+human-written message saying what it checks and why, even when the fix is
+tiny. The size of the generated part should match what the human-provided
+information (the issue, the fix) justifies; scaffolding beyond that is a
+negative.
+
+The description must match the final state of the PR. Text about work that
+was reverted or replaced is a negative.
+
+Where LLM-generated code is a black box, the PR must say where it is used, so
+the reviewer knows where to look and where not to look. A bare "LLM-generated"
+note without locations is not enough.
+
+<!-- AI END -->
+
 Sometimes, no comment is better than some comment. LLM generated comments
 are often BEYOND useless simply because they interrupt the natural flow of
 code reading, so be strict with LLM generated comments that add no value
@@ -59,3 +108,6 @@ to human comprehension
 
 This file should be self-updating (with human approval), meaning that user
 feedback should be used as a suggestion to add or refine these rubrics
+
+Rules added from feedback must be generic: no PR numbers, repo names or
+examples copied from a specific PR.

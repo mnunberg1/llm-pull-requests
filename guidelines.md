@@ -143,6 +143,10 @@ PRs should be looked at negatively when AIs *extend* existing APIs (internal
 or external), or *modify* existing fields and structures without justification,
 because chances are that a human would not have done the same.
 
+When this black box **does** exist, the contributor MUST indicate where/how
+this LLM black box is used, in order to instruct the reviewer where to look
+and where NOT to look. Contributors should take extra care to indicate where
+human control ends and machine implementation takes over.
 
 ## The Golden Rule of LLM Reviewing
 

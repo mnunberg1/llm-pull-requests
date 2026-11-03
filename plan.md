@@ -17,9 +17,13 @@ ROOT/
     REPO.md            # repo-specific information
     CLAUDE.md          # project instructions for Claude
     scripts.md         # spec for regenerating scripts/
+    checksums.md       # md5 of files the grade-review skill depends on (gitignored)
+  learning/            # small example PRs and why they were accepted or not; added to the grading prompt after the rubric
+  .claude/skills/grade-review/  # interactive review-refine loop (skill)
   scripts/             # GENERATED from the files above, gitignored
     fetch_prs.py       # pulls recent PRs via gh CLI into data/prs
     grade.py           # builds prompt.md + guidelines + rubric + PR, runs the model, writes JSON result; owns the JSON output format
+    explain.py         # asks the model to explain a stored grade; read-only
     serve.py           # local server: serves the grading page, saves grades to text files
   data/<REPO>          # GENERATED, gitignored
     prs/<number>/      # cached PR data, fetched once
@@ -57,28 +61,60 @@ comments carry the detail. Each comment carries a 1-5 sentiment
 (1 very negative, 5 very positive) that shows how the model viewed the code.
 It is display only and never feeds any score:
 
+<!-- AI BEGIN -->
+
 ```json
 {
   "pr": 123,
   "overall": 3,
-  "comments": [{"sentiment": 4, "text": "Short comment, ~150 chars max, no implementation details."}, ...]
+  "comments": [{"sentiment": 4, "text": "Short comment, ~150 chars max, no implementation details."}, ...],
+  "effort": {"author_minutes": 30, "review_minutes": 180}
 }
 ```
 
+`effort` is the model's rough estimate, in minutes, of the human effort behind
+the change. `author_minutes` assumes an author who is not intimately familiar
+with the codebase and counts what they actually did, so it is low for
+LLM-generated code. `review_minutes` assumes a maintainer who knows the
+codebase and treats LLM-generated code as harder to review. It is display
+only and never feeds any score. A heuristic only.
+
+<!-- AI END -->
+
 ## Workflow
 
-1. Fetch the last 20–30 PRs (open and closed) once.
-2. Grade them all into results/<run-id>/.
-3. Run `scripts/serve.py <run-id>` and open the page in a browser. Each PR shows
-   its GitHub link, title, author, the model's 1-5 score and its comments with
-   sentiment badges, an optional 1-5 grade of mine, and a notes box. Saving
-   writes grades/<number>.txt.
-4. The page can filter to PRs where the model and I differ by 2+ points.
-   summary.txt is regenerated on each save.
-5. Interactive LLM session prompts for adjustments to rubric.md and plan.md
-   based on feedback.
-6. Adjust rubric.md, re-run into a new results/\<run-id>, compare.
-7. Repeat until agreement is good enough.
+### Fetch PRs
+
+Fetch 30 recent PRs (open and closed) once that conform to the criteria 
+in repo.md. Fetch 10 of each: small, medium, and large. 
+Size is in  respect to core source code changes only, so disregard tests 
+and comments (when considering size), unless the 
+PR is about the test infrastructure itself.
+
+           Small: < 150 lines 
+           Medium: 150-500 lines
+           Large: > 500 lines
+
+### Grading
+
+Grade them all into results/<run-id>/ by using the grading script
+
+### Viewing
+
+Run `scripts/serve.py <run-id>` and open the page in a browser. Each PR shows
+its GitHub link, title, author, the model's 1-5 score and its comments with
+sentiment badges, an optional 1-5 grade of mine, and a notes box. Saving
+writes grades/<number>.txt.
+
+### Review Loop
+
+- Run the `grade-review` skill: Claude walks me through the graded PRs,
+records my feedback in grades/, answers questions about the grader's
+rationale, and proposes generic diffs to rubric.md, prompt.md and
+plan.md, and repo-specific ones to REPO.md. I approve each diff.
+
+- Adjust rubric.md, re-run into a new results/\<run-id>, compare. 
+- Repeat until agreement is good enough.
 
 ## Later: GitHub integration
 
