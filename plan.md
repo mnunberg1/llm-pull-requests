@@ -41,6 +41,7 @@ ROOT/
     scripts.md         # spec for regenerating scripts/
     checksums.md       # md5 of files the grade-review skill depends on (gitignored)
   learning/            # small example PRs and why they were accepted or not; added to the grading prompt after the rubric
+  <!-- AI BEGIN -->learning/interactive-feedback/<owner_name>/<pr>-<timestamp>.md  # Q&A from my replies (session or web UI), one file per PR; read by the grader after the examples<!-- AI END -->
   .claude/skills/grade-review/  # interactive review-refine loop (skill)
   scripts/             # GENERATED from the files above, gitignored
     fetch_prs.py       # pulls recent PRs via gh CLI into data/prs
@@ -78,7 +79,8 @@ session (Claude Code) in this repo.
 
 ## Model output contract
 
-The grader must return only JSON, nothing else. No per-criterion scores; the
+The grader must return only JSON, nothing else. <!-- AI BEGIN -->Three scores
+(atomicity, description, readability) and no others; <!-- AI END -->the
 comments carry the detail. Each comment carries a 1-5 sentiment
 (1 very negative, 5 very positive) that shows how the model viewed the code.
 It is display only and never feeds any score:
@@ -88,11 +90,29 @@ It is display only and never feeds any score:
 ```json
 {
   "pr": 123,
-  "overall": 3,
+  "scores": {"atomicity": 3, "description": 4, "readability": 2, "test_readability": 4},
+  "files": [{"path": "src/a.cc", "readability": 2}, ...],
+  "overall": 2,
+  "overall_with_tests": 3,
+  "dirs": [{"path": "src", "readability": 2.3, "files": 3, "lines": 120}, ...],
   "comments": [{"sentiment": 4, "text": "Short comment, ~150 chars max, no implementation details."}, ...],
   "effort": {"author_minutes": 30, "review_minutes": 180}
 }
 ```
+
+The model returns `scores`; `grade.py` adds `overall` (not asked from the
+model): 0.75 × readability + 0.125 × atomicity + 0.125 × description, rounded
+half up, so readability counts most. Results from before the three scores have
+only `overall`.
+
+`readability` covers the non-test files; `test_readability` is the model's
+score for the test files (judged by a looser threshold, omitted if the PR
+changes none) and `files` its readability score per changed file. `grade.py`
+also computes, not the model: `overall_with_tests`, the same formula with
+readability replaced by the source and test scores weighted by their share of
+the changed lines (equal to `overall` without test changes), and `dirs`, the
+mean file score of every directory above the scored files, weighted by changed
+lines. Test files are those under the repo file's test paths.
 
 `effort` is the model's rough estimate, in minutes, of the human effort behind
 the change. `author_minutes` assumes an author who is not intimately familiar

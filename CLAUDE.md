@@ -1,4 +1,4 @@
-# prdocs
+# LLM Pull Request Analyzer
 
 LLM grader for GitHub PRs, scored against the Pull Request Guidelines. See
 `plan.md` for the full plan and workflow.
@@ -16,7 +16,7 @@ LLM grader for GitHub PRs, scored against the Pull Request Guidelines. See
   generic template<!-- AI END -->
 - `scripts/` – `fetch_prs.py`, `grade.py`, `explain.py`, `serve.py`,
   <!-- AI BEGIN -->`mirror_prs.py`, `ci_grade.py`, `collect_ci.py`,
-  `pr-grader.yml`<!-- AI END --> - generated
+  `pr-grader.yml`<!-- AI END --><!-- AI BEGIN -->, `webui.py`, `extract_feedback.py`<!-- AI END --> - generated
 - `.claude/skills/grade-review/` – the interactive review-refine loop; use it
   to review grades and ask the grader for its rationale
 - <!-- AI BEGIN -->`.claude/skills/grade-change-config/` – `/grade-change-config`
@@ -24,6 +24,10 @@ LLM grader for GitHub PRs, scored against the Pull Request Guidelines. See
 - `learning/` – small example PRs and why they were accepted or not, named
   `accepted-<topic>.md` or `rejected-<topic>.md`; added to the grading prompt
   after the rubric
+  <!-- AI BEGIN -->- `learning/interactive-feedback/<owner_name>/<pr>-<timestamp>.md` – the
+  reviewer's replies to grader comments as Q&A, written by
+  `scripts/extract_feedback.py` (from the web UI and the grade-review skill);
+  read by the grader after the examples. Not edited by hand.<!-- AI END -->
 - `data/`, `results/`, `grades/` – generated, gitignored
 - `checksums.md` – md5 of the files the grade-review skill depends on; the
   skill rewrites it, gitignored
@@ -35,6 +39,7 @@ python3 -I scripts/fetch_prs.py
 python3 -I scripts/grade.py --run-id <run-id>
 python3 -I scripts/explain.py <run-id> <pr> ["question"]   # grader's rationale
 python3 -I scripts/serve.py <run-id>      # grading page at http://127.0.0.1:8765/
+<!-- AI BEGIN -->python3 -I scripts/webui.py                # web UI at http://127.0.0.1:8766/ (see webui.md)<!-- AI END -->
 ```
 
 <!-- AI BEGIN -->
@@ -95,3 +100,5 @@ Any modification to these files should be done by requesting explicit approval.
 ## TODO
 
 - Fill in anything missing here as the project settles.
+- Don't use browser/chrome MCP for this project, just do best-effort at web
+    layout.

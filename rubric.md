@@ -25,7 +25,15 @@ Place priority on the natural review order:
 5. Can I get a sense of what's happening by just looking at the commit titles
    and descriptions?
 
-Out of scope: correctness and design burden (per the guidelines).
+<!-- AI BEGIN -->Out of scope: correctness and design burden (per the guidelines).
+
+<!-- AI BEGIN -->
+When the PR's stated purpose is a refactor that enables a feature, the
+refactor is part of the change. Do not lower the readability or atomicity
+score, or raise a negative comment, merely because the refactor and the
+feature are in the same PR. Judge how clearly the refactor is explained and
+how cleanly it is organized across commits.
+<!-- AI END --><!-- AI END -->
 
 
 Things to consider:
@@ -70,8 +78,10 @@ parameters and return values. Never praise rationale comments.
 Do not penalize terse descriptions or commit messages on trivial docs, CI or
 tooling changes. Expectations scale with the size and risk of the change.
 
-A compatibility break counts against the PR even when the description
-documents it.
+<!-- AI BEGIN -->A compatibility break is not a readability negative by itself. When the
+description states it clearly, do not count it against the PR or lower the
+readability score for it, and do not raise it as a negative comment. When it is
+undocumented or unclear, count that against the description score.<!-- AI END -->
 
 Automated PRs from bots are not graded; the repo file <!-- AI BEGIN -->(`repos/<name>.md`)<!-- AI END --> lists which to skip.
 
@@ -98,6 +108,62 @@ note without locations is not enough.
 
 <!-- AI END -->
 
+<!-- AI BEGIN -->
+
+Scores. Give three separate 1-5 scores (5 is best). This replaces "not scored
+individually" above: the criteria are grouped into three scores, and the
+criteria inside a group are still weighed qualitatively. The final grade is
+the weighted average, so the code itself counts most:
+
+- Code readability, 75% of the final grade: criteria 3 and 5, 6 and 8 (comment
+  style, LLM/human separation, API surface, golden rule) and
+  review step 4 (a sense of what is happening from skimming the diff). Judge
+  the non-test files only; test files get their own score, below.
+- Commit atomicity, 12.5%: criterion 1, and review step 5 (commit titles and
+  messages).
+- Description quality, 12.5%: criteria 2 and 4, and review steps 1-3 (title,
+  description, compatibility notes).
+
+Judge each score on its own criteria; do not lower one because another is
+weak. A rule below belongs to the score of the part it is about (a rationale
+comment is readability, a long description is description).
+
+Test readability. Also give a 1-5 test readability score for the test files
+(omit it if the PR changes none). Judge it on its own merit: only the test
+files' code and comments (criteria 3 and 7), never the source code, the
+description or the commits, and do not let the quality of the source raise or
+lower it. Use a looser threshold than for other code: repetition, fixture and
+table boilerplate and longer bodies are normal in tests. Judge whether a
+reviewer can see what each test checks in reasonable time. The grade without
+tests ignores it; the grade with tests counts it in
+proportion to the test files' share of the changed lines.
+
+Per-file scores. Also give a 1-5 readability score for each changed file that
+has code or comments to read (skip generated, data and lock files), with the
+threshold for its kind: the test threshold above for test files, the
+readability criteria for the rest. Judge each file on its own changes. These
+are not averaged into the grades.
+
+<!-- AI END -->
+
+<!-- AI BEGIN -->
+
+Readability depends on how much the reviewer has to hold in mind, not on how
+many lines changed:
+
+- A large amount of code that is self-contained and reached from a single
+  place (for example a new file with one call site) is a small readability
+  burden. Do not lower the readability score for its size alone.
+- A small edit of a few lines repeated across many places is a larger burden
+  than its line count suggests: the reviewer must find and re-check each site.
+- Consistent changes are cheap to review: the same type of change everywhere,
+  such as a renamed type or function, a swapped call or an added parameter.
+  Check one instance and skim the rest. Varied, disparate changes spread over
+  many places are expensive even when each is small. Weigh that difference,
+  not the number of files or lines touched.
+
+<!-- AI END -->
+
 Sometimes, no comment is better than some comment. LLM generated comments
 are often BEYOND useless simply because they interrupt the natural flow of
 code reading, so be strict with LLM generated comments that add no value
@@ -111,3 +177,14 @@ feedback should be used as a suggestion to add or refine these rubrics
 
 Rules added from feedback must be generic: no PR numbers, repo names or
 examples copied from a specific PR.
+
+<!-- AI BEGIN -->
+
+Instead of changing this file after every response, the reviewer's replies to
+the grader's comments can be kept as question and answer files under
+`learning/interactive-feedback/`, one folder per repo. If an "Interactive
+feedback" section follows the examples, read it as the reviewer's judgement on
+earlier grades of this repo: make the kinds of comments the reviewer asked for
+and avoid the kinds they rejected.
+
+<!-- AI END -->

@@ -113,6 +113,18 @@ For each PR show:
   scores, then do that, otherwise don't flood the screen. Feel free to use
   color and other formatting.
 
+Keywords: the user may add keywords when starting the skill (for example
+`/grade-review annotate-source`) or later in the session. With no keyword, show
+exactly what is listed above and nothing more. Each keyword adds only the one
+thing described here:
+- `annotate-source`: after each comment, add the diff locations it is about, as
+  `path:line` (or `path:start-end`), nothing else. Get them with
+  `python3 -I scripts/explain.py --config <active> --annotate-source <run-id> <n>`,
+  which prints JSON `{"annotations": [{"comment": <i>, "refs": [{"file",
+  "start", "end"}]}]}` (comment numbers start at 1, matching `c1`, `c2`;
+  already checked against the diff). Comments with no refs get nothing. Do not
+  show the code.
+
 Then stop and wait. The user replies in free text. Understand these forms:
 - a score, such as "2" or "2.5/5"
 - inline comments on a model comment, such as "c2 wrong, this is fine for
@@ -131,14 +143,24 @@ notes:
 
 Keep the user's wording. Set `overall` only when they gave an integer 1-5; keep
 fractional scores in the notes text. Merge into the existing file, never
-discard earlier notes. Confirm briefly, then show the next PR.
+discard earlier notes.
+
+After each write, run
+`python3 -I scripts/extract_feedback.py --config <active> <run-id> <n>`. It
+turns the user's replies to comments (and their grade and notes) into a Q&A
+file, `learning/interactive-feedback/<owner_name>/<n>-<timestamp>.md`, which the
+grader reads in later runs. Do not edit those files by hand. This is the
+alternative to proposing a rubric change after every reply: only propose
+rubric changes in Refine, as before.
+
+Confirm briefly, then show the next PR.
 
 ## Asking the grader why
 
 When the user asks why the model gave a score or wrote a comment, run:
 
 ```
-python3 -I scripts/explain.py --config <active> <run-id> <n> "<the user's question>"
+python3 -I scripts/explain.py --config <active> --resolve <run-id> <n> "<the user's question>"
 ```
 
 With no question the script asks for a full rationale. Show the answer, say
@@ -146,6 +168,19 @@ which rubric or guideline text it relied on, and point out where the rubric is
 ambiguous or silent. Do not defend the model; if the explanation shows a gap in
 the rubric or prompt, note it as a candidate change. This never changes the
 stored grade or results.
+
+Answers cite code in the diff as `[[<path>:<line>]]` or `[[<path>:<start>-<end>]]`
+(new-file line numbers; the web UI turns them into links into the diff). When
+you show the answer:
+- Add `--resolve` to the command. It appends a `Referenced code:` section with
+  the cited lines taken from the cached diff, so you can show them under the
+  point they support without the user opening the PR.
+- Show each citation as `path:line` plus a few of those lines, in a code
+  block. Do not show the raw `[[...]]` markers.
+- A citation marked `(not in the diff)` is a miss by the model: say so, and do
+  not rely on that point until it is checked against `diff.patch`.
+- When recording the user's feedback, keep citations in `path:line` form so
+  they can find the code again.
 
 ## Refine
 
