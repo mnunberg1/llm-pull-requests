@@ -43,7 +43,7 @@ ROOT/
   learning/            # small example PRs and why they were accepted or not; added to the grading prompt after the rubric
   <!-- AI BEGIN -->learning/interactive-feedback/<owner_name>/<pr>-<timestamp>.md  # Q&A from my replies (session or web UI), one file per PR; read by the grader after the examples<!-- AI END -->
   .claude/skills/grade-review/  # interactive review-refine loop (skill)
-  scripts/             # GENERATED from the files above, gitignored
+  scripts/             # <!-- AI BEGIN -->GENERATED from scripts.md and committed, so a clone runs as is<!-- AI END -->
     fetch_prs.py       # pulls recent PRs via gh CLI into data/prs
     grade.py           # builds prompt.md + guidelines + rubric + PR, runs the model, writes JSON result; owns the JSON output format
     explain.py         # asks the model to explain a stored grade; read-only
@@ -63,8 +63,9 @@ ROOT/
 
 ## Generating the scripts
 
-Only the specs are committed; `scripts/` is rebuilt from them by an LLM
-session (Claude Code) in this repo.
+<!-- AI BEGIN -->The specs are the source of truth. `scripts/` is generated from them by an LLM
+session in this repo and committed, so a clone runs without regenerating;
+regenerate only after changing a spec.<!-- AI END -->
 
 1. Ask Claude to regenerate `scripts/` from `scripts.md`, following `plan.md`
    and `CLAUDE.md`. Delete the old `scripts/` first for a clean rebuild.
@@ -139,7 +140,9 @@ PR is about the test infrastructure itself.
 
 ### Grading
 
-Grade them all into <!-- AI BEGIN -->results/<owner_name>/<run-id><!-- AI END -->/ by using the grading script
+Grade them all into <!-- AI BEGIN -->results/<owner_name>/<run-id><!-- AI END -->/ by using the grading script<!-- AI BEGIN -->,
+which runs the model through `scripts/agent.py`: Claude by default, or Codex or
+any command that reads a prompt on stdin and prints a reply (see RUNNING.md)<!-- AI END -->
 
 ### Viewing
 

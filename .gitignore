@@ -2,7 +2,8 @@
 results/
 grades/
 data/
-scripts/
+__pycache__/
+*.pyc
 .idea/
 *-edit.md
 checksums.md

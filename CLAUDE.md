@@ -16,7 +16,9 @@ LLM grader for GitHub PRs, scored against the Pull Request Guidelines. See
   generic template<!-- AI END -->
 - `scripts/` – `fetch_prs.py`, `grade.py`, `explain.py`, `serve.py`,
   <!-- AI BEGIN -->`mirror_prs.py`, `ci_grade.py`, `collect_ci.py`,
-  `pr-grader.yml`<!-- AI END --><!-- AI BEGIN -->, `webui.py`, `extract_feedback.py`<!-- AI END --> - generated
+  `pr-grader.yml`<!-- AI END --><!-- AI BEGIN -->, `webui.py`, `extract_feedback.py`, `agent.py`<!-- AI END --> - generated
+  from `scripts.md` and committed<!-- AI BEGIN -->; model calls go through `agent.py` (claude by default,
+  `codex` or a command via `--agent`, `$PRDOCS_AGENT` or `agent=` in the config)<!-- AI END -->
 - `.claude/skills/grade-review/` – the interactive review-refine loop; use it
   to review grades and ask the grader for its rationale
 - <!-- AI BEGIN -->`.claude/skills/grade-change-config/` – `/grade-change-config`

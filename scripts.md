@@ -8,6 +8,14 @@ Common: Python 3 stdlib only, run with `python3 -I`. Every
 `argparse.ArgumentParser` gets `color=False`. `ROOT` is the parent of
 `scripts/`. A repo is written `owner/name` for GitHub and `owner_name` on disk.
 Each script starts with a comment saying it is AI generated.
+<!-- AI BEGIN -->Right after that comment each script exits with a clear message unless it runs on
+Python 3.14 or newer (`argparse` `color=False` needs it). The scripts are
+committed, so a clone runs as is, and each needs only the standard library,
+the files of this repo, the sibling scripts it launches, `git`/`gh` where it
+uses them, and the agent CLI for model calls. Because `-I` keeps the script
+directory off `sys.path` they do not import each other: the shared parts
+(config loading, `ignored()`) are repeated in each, and the model call is the
+separate command `agent.py`.<!-- AI END -->
 
 Config: every script except `ci_grade.py` accepts `--config <file>`; else
 `$PRDOCS_CONFIG`; else `active-config.cfg` (a symlink to the
@@ -84,7 +92,7 @@ helper does this and is shared by `fetch_prs.py` and `grade.py`.
 Args: `--repo` (default: `default_repo()` in the on-disk form),
 `--run-id` (required), `-j` (default 4 workers), `--pr` (repeatable; grade
 only these PR numbers)<!-- AI BEGIN -->, `--effort` (default `medium`; one of low, medium, high,
-xhigh, max)<!-- AI END -->.
+xhigh, max), `--agent` (see `agent.py`)<!-- AI END -->.
 
 For each PR listed in `data/<repo>/selected.json` (all directories under
 `prs/` if that file is missing), in parallel, skipping any whose `meta.json` is
@@ -100,9 +108,12 @@ ignored and any that already have `results/<owner_name>/<run-id>/<n>.json`:
    omitted if there are none);<!-- AI END --> `# PR meta` + `meta.json`; `# Commits` + `commits.json`; `# Diff` +
    `diff.patch`. A diff over 150,000 characters is cut and gets
    `[diff truncated]` appended.
-2. Run `claude -p --model sonnet --effort <effort> --tools ""
-   --no-session-persistence` with the prompt on stdin. <!-- AI BEGIN -->`--effort` is
-   always passed, so the user's own default effort level is not inherited.<!-- AI END -->
+2. Run `agent.py --config <config> --effort <effort> [--agent <agent>]` with the
+   prompt on stdin and take its stdout (with the default agent that is
+   `claude -p --model sonnet --effort <effort> --tools ""
+   --no-session-persistence`). <!-- AI BEGIN -->`--effort` is always passed, so the agent's own default
+   effort level is not inherited. A failing agent is reported as `PR <n>: agent
+   failed: ...` with the last 300 characters of its stderr, and nothing is written.<!-- AI END -->
 3. Take the text from the first `{` to the last `}`, parse it as JSON and write
    it, indented, to `results/<owner_name>/<run-id>/<n>.json`. On a parse failure print the
    PR number, the first 200 characters of stdout and of stderr to stderr, and
@@ -190,6 +201,35 @@ save and by the grade-review skill after every recorded reply.
    Print `wrote <file name>`.
 <!-- AI END -->
 
+## agent.py
+
+<!-- AI BEGIN -->
+Args: `--agent`, `--effort` (low, medium, high, xhigh, max; default: the
+agent's own), `--model`, `--config`.
+
+The one place that calls a model, so the grader does not depend on Claude.
+Reads the prompt from stdin, writes the agent's stdout to stdout and its stderr
+to stderr, and exits with its exit code. Standard library only; the agent is
+chosen by `--agent`, else `$PRDOCS_AGENT`, else the `agent=` line of the config
+(`--config`, else `$PRDOCS_CONFIG`, else `active-config.cfg` if it exists;
+a missing config or line is fine), else `claude`. The model is `--model`, else
+`$PRDOCS_MODEL`, else `sonnet` for claude and the agent's own for the rest.
+
+- `claude`: `claude -p --model <model> --tools "" --no-session-persistence`,
+  plus `--effort <effort>` if given.
+- `codex`: `codex exec --skip-git-repo-check --sandbox read-only
+  [-c model_reasoning_effort="<effort>"] [-m <model>] -`, with the prompt on
+  stdin (xhigh and max become high). Untested here: no `codex` was installed.
+- anything else is a command line (split like a shell would, so `gemini -p`
+  works) that reads the prompt on stdin and prints the reply on stdout. It
+  gets `$PRDOCS_EFFORT` and `$PRDOCS_MODEL` in its environment (empty if
+  unset).
+
+If the command is not on `PATH`, exit with a message that says how to choose
+another agent. The grading prompt asks for JSON only, so a custom agent must
+return the reply text and not a transcript.
+<!-- AI END -->
+
 ## explain.py
 
 Args: `run_id` (positional), `pr` (positional number), `question` (optional
@@ -219,8 +259,8 @@ Asks the model to explain a stored grade. Never writes to `results/` or
    ranges of about 10 lines at most, only lines that exist in the diff, next to
    the point they support, not for points about the title, description or
    commits). The web UI and the grade-review skill turn these into links.<!-- AI END -->
-5. Run `claude -p --model sonnet --tools "" --no-session-persistence` with the
-   prompt on stdin and print its stdout.
+5. Run `agent.py --config <config> [--agent <agent>]` (no `--effort`) with the
+   prompt on stdin and print its stdout. `--agent` is also accepted.
    <!-- AI BEGIN -->With `--resolve`, then print `Referenced code:` and, for each distinct
    citation in the reply, the citation line followed by the numbered diff
    lines it names (`resolve()`, at most 40 lines per citation; the path may be
@@ -410,12 +450,13 @@ GitHub Actions workflow, written to `scripts/` and copied into each
 - `permissions`: `contents: read`, `pull-requests: write`.
 - `concurrency`: group `pr-grader-<PR number>`, cancel in progress.
 - One job, only if the head ref starts with `pr/`; `runs-on: [self-hosted,
-  macOS, ARM64]` (the user's Mac, using its logged-in `claude`; no API key),
+  macOS, ARM64]` (the user's Mac, using its logged-in agent; no API key),
   20 min timeout. Env: `GH_TOKEN` (the workflow token), `PR_GRADER_MODE`
-  (repo variable, default `log`).
+  (repo variable, default `log`), <!-- AI BEGIN -->`PRDOCS_AGENT` (repo variable; empty means claude)<!-- AI END -->.
 - Steps: check out branch `pr-grader` into `grader/` (never the PR's code);
-  print `python3 --version` and `claude --version` (the runner's PATH must
-  provide Python 3.14+, since the scripts use `color=False`, and `claude`); run
+  print `python3 --version` and, if there is one, `claude --version` (the runner's
+  PATH must provide Python 3.14+, since the scripts use `color=False`, and the
+  agent CLI); run
   `python3 -I grader/scripts/ci_grade.py`; upload `grader/ci-out/` as
   artifact `pr-grade-<PR number>` even if the step failed.
 
@@ -470,7 +511,8 @@ is run as `python3 -I scripts/<name>.py --config <cfg>`.
 
 ## webui.py
 
-Args: `--port` (default 8766), `--no-browser`. Serves on 127.0.0.1 only
+Args: `--port` (default 8766), `--no-browser`, <!-- AI BEGIN -->`--agent` (sets `$PRDOCS_AGENT`, which
+the scripts it runs inherit)<!-- AI END -->. Serves on 127.0.0.1 only
 (`ThreadingHTTPServer`, silent), opens the page in the browser unless
 `--no-browser`. POSTs are refused without an `X-Role` header (a custom header
 forces a CORS preflight, which blocks other sites from posting), and any
@@ -543,8 +585,8 @@ the on-disk form `owner_name`:
   <!-- AI BEGIN -->Then it runs `extract_feedback.py` for the PR (and `run`), so
   `learning/interactive-feedback/` follows the saved feedback; if that fails the
   save is reported as an error.<!-- AI END -->
-- `POST /api/propose` `{repo, run, pr}`: job. Sends the model (`claude -p
-  --model sonnet --tools "" --no-session-persistence`) the current
+- `POST /api/propose` `{repo, run, pr}`: job. Sends the model (through
+  `agent.py`, like every model call) the current
   `rubric.md`, `prompt.md` and repo file, the PR meta, the stored grade and my
   feedback, and asks for JSON only: `{"proposals": [{"file", "old", "new",
   "why"}]}`. `file` is `rubric.md`, `prompt.md` or the repo file path

@@ -1,0 +1,42 @@
+# AI generated from scripts.md; do not edit by hand.
+# Copied into each mirrored base/<n> branch by mirror_prs.py. Grades the PR
+# with the bundle on branch pr-grader; never checks out or runs the PR's code.
+name: pr-grader
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: ['base/**']
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: pr-grader-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  grade:
+    if: startsWith(github.head_ref, 'pr/')
+    runs-on: [self-hosted, macOS, ARM64]
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PR_GRADER_MODE: ${{ vars.PR_GRADER_MODE || 'log' }}
+      PRDOCS_AGENT: ${{ vars.PRDOCS_AGENT }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: pr-grader
+          path: grader
+      # Self-hosted: python3 (3.14+) and the logged-in `claude` CLI must be on
+      # the runner's PATH; no API key is used.
+      - run: python3 --version && (claude --version || true)
+      - run: python3 -I grader/scripts/ci_grade.py
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-grade-${{ github.event.pull_request.number }}
+          path: grader/ci-out/
+          if-no-files-found: ignore
