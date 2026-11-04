@@ -14,7 +14,7 @@ requests (on github) in repository ${REPO}
 
 ## High Quality PRs
 
-High quality PRs are ones which consist of mainly non-LLM generated code
+High quality PRs are ones that consist of mainly human _directed_ code,
 that contains human written comments, and whose changeset is properly
 segmented between commits, that is, each commit tells a story of a different
 conceptual change within the PR.
@@ -42,6 +42,15 @@ It contains many tests, but those tests are so long that it's impossible
 for a human to read it within a reasonable amount of time and understand
 its purpose.
 
+## Human vs LLM Style, Direction, and Authoring
+
+The purpose of these guidelines is not to dictate stylistic conventions or
+deterministically limit or constrain AI output. On the contrary, our aim is
+to allow the maximum level of expressivenes and problem solving, while at the
+same time ensuring that the AI "acts like a human", meaning that its output
+follows thought patterns and cognitive processes similar to human ones, with
+the end result being that reviewing AI code becomes comparable to reviewing
+human code.
 
 ### High vs Low Quality
 
@@ -76,10 +85,21 @@ reading or understanding the codebase, or places future development constraints
 administrative overhead on a type of dependency, or using architecture or
 platform specific code, or additional interfaces which are highly specific.
 
+5. Apart from programming correctness, there are correct and incorrect ways
+to write documents, comments, structure sentences, and so on. Perhaps a
+non-native to the English language may make typographical, syntactical, or
+grammatical errors.
+
 None of these categories are within the scope of this document. Our aim here
 is to specify very generic properties of pull requests in order to make it
 simpler for our diverse and distributed contributor and development community
-to further contribute, use, and understand the projects of our ecosystem.   `
+to further contribute, use, and understand the projects of our ecosystem.
+
+From the perspective of this document, we do not care if code assumes that
+1+1=3 or has run-off sentences, typos, or other issues which would make the
+PR not be approved or worthy of merging. The point is to sanitize PRs to an
+extent where they are reviewable by humans, so _humans_ (or an AI, guided by
+human principles) can make the determination.
 
 
 ## LLM Generation and Contribution Guidelines
